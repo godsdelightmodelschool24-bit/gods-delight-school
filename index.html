@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>God's Delight Smart Gate</title>
+  <script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 520px;
+      margin: 20px auto;
+      padding: 16px;
+      text-align: center;
+      background: #f5f7fa;
+    }
+    main {
+      background: white;
+      padding: 20px;
+      border-radius: 14px;
+    }
+    button {
+      padding: 14px;
+      margin: 8px 0;
+      width: 100%;
+      font-size: 17px;
+      cursor: pointer;
+    }
+    #reader { width: 100%; margin-top: 16px; }
+    #result {
+      overflow-wrap: anywhere;
+      padding: 12px;
+      background: #eef2f5;
+      min-height: 24px;
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <h2>God's Delight Model School</h2>
+    <h3>Student QR Attendance</h3>
+    <p>Place a student's QR card in front of the camera.</p>
+    <button id="start">Start Camera</button>
+    <button id="stop">Stop Camera</button>
+    <div id="reader"></div>
+    <h3>Scan Result</h3>
+    <div id="result">Camera not started.</div>
+    <button id="again" hidden>Scan Next Student</button>
+  </main>
+
+  <script>
+    let scanner = null;
+    let running = false;
+
+    const result = document.getElementById("result");
+    const startButton = document.getElementById("start");
+    const stopButton = document.getElementById("stop");
+    const againButton = document.getElementById("again");
+
+    async function startScanner() {
+      if (running) return;
+
+      if (typeof Html5Qrcode === "undefined") {
+        result.textContent =
+          "Scanner library did not load. Check the internet connection and refresh.";
+        return;
+      }
+
+      scanner = new Html5Qrcode("reader");
+      result.textContent = "Requesting camera permission...";
+      try {
+        await scanner.start(
+          { facingMode: "environment" },
+          { fps: 10, qrbox: { width: 230, height: 230 } },
+          async function(decodedText) {
+            result.textContent = "QR content: " + decodedText;
+            againButton.hidden = false;
+            await stopScanner();
+          },
+          function() {}
+        );
+        running = true;
+        result.textContent = "Camera ready. Scan a QR card.";
+      } catch (error) {
+        result.textContent =
+          "Camera could not start: " + (error.message || error);
+        scanner = null;
+      }
+    }
+
+    async function stopScanner() {
+      if (scanner && running) {
+        try {
+          await scanner.stop();
+          await scanner.clear();
+        } catch (error) {}
+      }
+      running = false;
+      scanner = null;
+    }
+
+    startButton.addEventListener("click", startScanner);
+    stopButton.addEventListener("click", stopScanner);
+    againButton.addEventListener("click", function() {
+      againButton.hidden = true;
+      startScanner();
+    });
+  </script>
+</body>
+</html>
